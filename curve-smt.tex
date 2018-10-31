@@ -1,0 +1,164 @@
+\begin{tikzpicture}
+\begin{semilogxaxis}[
+    title={\bf Statistical Machine Translation, Average of Test Sets},
+    title style={yshift=-1ex},
+    %xlabel={corpus size (millions of words)},
+    ylabel={BLEU},
+    ylabel style={at={(0.03,0.5)}},
+    width=16cm,
+    height=9cm,
+    line width=2.0pt,
+    mark size=4,
+    mark options={solid},
+    xmin=9, xmax=220,
+    ymin=19, ymax=23,
+    xtick={10,20,30,50,80,100,150,200},
+    ytick={19,20,21,22,23},
+    legend pos=south east,
+    legend cell align={left},
+    ymajorgrids=true,
+    grid style=dashed,
+    log base 10 number format code/.code={%
+        $\pgfmathparse{int(10^(#1)+.5)}\pgfmathprintnumber{\pgfmathresult}$%
+    }
+]
+
+\draw[lightgray,fill] (axis cs:210,22.88) rectangle (axis cs:27,21.8);
+
+\addplot[ %%%%%%%%%%%%%%%%%%%%%%%%%%%% alibaba
+    color=darkgray,
+    solid,
+    visualization depends on={value \thisrow{MARK} \as \themark},
+    mark={\themark},
+    ]
+    table[x=SIZE, y=BLEU]{
+SIZE BLEU MARK
+	10 20.66 o
+	20 21.47 o
+	30 21.91 o
+	50 22.32 o
+	80 22.59 o
+	100 22.66 *
+	150 22.61 o
+	200 22.37 o
+    };
+    \addlegendentry{alibaba}
+
+
+
+\addplot[ %%%%%%%%%%%%%%%%%%%%%%%%%%%% arc-13
+    color=darkblue,
+    dashed,
+    visualization depends on={value \thisrow{MARK} \as \themark},
+    mark={\themark},
+    ]
+    table[x=SIZE, y=BLEU]{
+SIZE BLEU MARK
+	10 19.19 o
+	20 20.32 o
+	30 20.80 o
+	50 21.54 o
+	80 22.12 o
+	100 22.39 o
+	150 22.47 o
+	200 22.53 *
+    };
+    \addlegendentry{arc-13}
+
+
+\addplot[ %%%%%%%%%%%%%%%%%%%%%%%%%%%%  microsoft
+    color=darkred,
+    dashdotted,
+    visualization depends on={value \thisrow{MARK} \as \themark},
+    mark={\themark},
+    ]
+    table[x=SIZE, y=BLEU]{
+SIZE BLEU MARK
+10 20.96 o
+20 21.78 o
+30 22.23 o
+50 22.71 o
+80 22.73 o
+100 22.72 o
+150 22.81 *
+200 22.73 o
+    };
+    \addlegendentry{microsoft}
+    
+\addplot[ %%%%%%%%%%%%%%%%%%%%%%%%%%%%  nrc
+    color=darkpurple,
+    dashdotdotted,
+    visualization depends on={value \thisrow{MARK} \as \themark},
+    mark={\themark},
+    ]
+    table[x=SIZE, y=BLEU]{
+SIZE BLEU MARK
+10 20.48 o
+20 21.55 o
+30 21.98 o
+50 22.41 o
+80 22.67 o
+100 22.63 o
+150 22.63 o
+200 22.49 o
+    };
+    \addlegendentry{nrc-yisi-bicov}
+    
+\addplot[ %%%%%%%%%%%%%%%%%%%%%%%%%%%% prompsit
+    color=darkyellow,
+    densely dashed,
+    visualization depends on={value \thisrow{MARK} \as \themark},
+    mark={\themark},
+    ]
+    table[x=SIZE, y=BLEU]{
+SIZE BLEU MARK
+	10 18.23 o
+	20 20.08 o
+	30 20.78 o
+	50 21.68 o
+	80 22.31 o
+	100 22.52 *
+	150 22.48 o
+	200 22.15 o
+    };
+    \addlegendentry{prompsit-lm}
+
+\addplot[ %%%%%%%%%%%%%%%%%%%%%%%%%%%% rwth-nn
+    color=darkcyan,
+    dotted,
+    visualization depends on={value \thisrow{MARK} \as \themark},
+    mark={\themark},
+    ]
+    table[x=SIZE, y=BLEU]{
+SIZE BLEU MARK
+	10 21.02 o
+	20 21.73 o
+	30 21.98 o
+	50 22.37 o
+	80 22.45 *
+	100 22.44 o
+	150 22.21 o
+	200 22.10 o
+    };
+    \addlegendentry{rwth-nn}
+
+\addplot[ %%%%%%%%%%%%%%%%%%%%%%%%%%%% RWTH nn-redundant
+    color=darkgreen,
+    densely dotted,
+    visualization depends on={value \thisrow{MARK} \as \themark},
+    mark={\themark},
+    ]
+    table[x=SIZE, y=BLEU]{
+SIZE BLEU MARK
+	10 21.07 o
+	20 21.81 o
+	30 22.14 o
+	50 22.38 o
+	80 22.54 *
+	100 22.47 o
+	200 22.01 o
+    };
+    \addlegendentry{rwth-nn-redundant}
+
+\end{semilogxaxis}
+\end{tikzpicture}

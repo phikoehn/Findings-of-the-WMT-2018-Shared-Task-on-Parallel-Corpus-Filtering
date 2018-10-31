@@ -1,0 +1,425 @@
+%
+% File emnlp2018.tex
+%
+%% Based on the style files for EMNLP 2018, which were
+%% Based on the style files for ACL 2018, which were
+%% Based on the style files for ACL-2015, with some improvements
+%%  taken from the NAACL-2016 style
+%% Based on the style files for ACL-2014, which were, in turn,
+%% based on ACL-2013, ACL-2012, ACL-2011, ACL-2010, ACL-IJCNLP-2009,
+%% EACL-2009, IJCNLP-2008...
+%% Based on the style files for EACL 2006 by 
+%%e.agirre@ehu.es or Sergi.Balari@uab.es
+%% and that of ACL 08 by Joakim Nivre and Noah Smith
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[hyperref]{emnlp2018}
+\usepackage[utf8]{inputenc}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{subcaption}
+%\hypersetup{draft}
+\renewcommand*\ttdefault{txtt} % 20% tighter than courier
+\usepackage{pgfplots}
+
+\usepackage{color}
+\usepackage{colortbl}
+\definecolor{lightgreen}{rgb}{0.8, 1, 0.8}
+\definecolor{lightyellow}{rgb}{1, 1, 0.8}
+\definecolor{darkgreen}{rgb}{0,.5,0}
+\definecolor{darkred}{rgb}{.5,0,0}
+\definecolor{darkblue}{rgb}{0,0,.5}
+\definecolor{darkpurple}{rgb}{.5,0,.5}
+\definecolor{darkcyan}{rgb}{.5,.5,0}
+\definecolor{darkyellow}{rgb}{0,.5,.5}
+\definecolor{darkgray}{rgb}{.4,.4,.4}
+\definecolor{lightgray}{rgb}{.85,.85,.85}
+\usepackage{rotating}
+
+\newcommand{\todo}[1] {\textcolor{red}{\em #1}}
+\newcommand{\todomlf}[1] {\textcolor{red}{\textbf{MLF:} \em [#1]}\marginpar{\textcolor{red}{\Large \textbf{!!!}}}}
+%\newcommand{\todomlf}[1] {}
+
+\aclfinalcopy % Uncomment this line for the final submission
+
+\setlength\titlebox{7cm}
+% You can expand the titlebox if you need extra space
+% to show all the authors. Please do not make the titlebox
+% smaller than 5cm (the original size); we will check this
+% in the camera-ready version and ask you to change it back.
+
+\newcommand\BibTeX{B{\sc ib}\TeX}
+\newcommand\confname{EMNLP 2018}
+\newcommand\conforg{SIGDAT}
+
+\title{Findings of the WMT 2018 Shared Task on Parallel Corpus Filtering}
+
+\author{Philipp Koehn \\
+  Computer Science Department \\
+  Johns Hopkins University \\
+  Baltimore, Maryland, United States \\
+  {\tt phi@jhu.edu} \\\And
+  Huda Khayrallah \\
+  Computer Science Department \\
+  Johns Hopkins University \\
+  Baltimore, Maryland, United States \\
+  {\tt huda@jhu.edu} \\\AND
+  Kenneth Heafield \\
+  School of Informatics \\
+  University of Edinburgh\\
+  Edinburgh, Scotland, European Union \\
+  {\tt kheafiel@inf.ed.ac.uk} \\\And
+  Mikel L. Forcada \\
+  Dept.\ de Llenguatges i Sistemes
+    Inform{\`a}tics \\
+  Universitat d'Alacant  \\
+  03690 St.\ Vicent del Raspeig, Spain \\
+  {\tt mlf@dlsi.ua.es} \\}
+
+\date{}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+We posed the shared task of assigning sen\-tence-level quality scores for a very noisy corpus of sentence pairs crawled from the web, with the goal of sub-selecting 1\% and 10\% of high-quality data to be used to train machine translation systems. Seventeen participants from companies, national research labs, and universities participated in this task.
+\end{abstract}
+
+\section{Introduction}
+Training corpora for machine translation come 
+in varying degrees of quality. On the one extreme end they are carefully 
+professionally translated specifically for this purpose
+which may have done under the instruction to provide fairly 
+literal translations and adherence to sentence-by-sentence correspondences. 
+The other extreme are sentence pairs extracted with fully automatic processes 
+from indiscriminate crawling of the World Wide Web.
+
+The Shared Task on Parallel Corpus Filtering targets the second 
+extreme, although the methods developed for this data condition should
+also carry over to less noisy parallel corpora. 
+In setting this task, we were motivated by our ongoing efforts
+to create large publicly available parallel corpora from web 
+sources and the recognition that noisy parallel data is especially
+a concern for neural machine translation \citep{W18-2709}.
+
+This paper gives an overview of the task, presents its results
+and provides some analysis.
+
+\section{Related Work}
+Although the idea of crawling the web indiscriminately for parallel data goes back to the 20th century \citep{Resnik:1999}, work in the academic community on extraction of parallel corpora from the web has so far mostly focused on large stashes of multilingual content in homogeneous form, such as the Canadian Hansards, Europarl \citep{Koehn:2005:MTS}, the United Nations \citep{MTS09:Rafalovitch,UN:LREC2015}, or European Patents \citep{eamt11:Taeger}. A nice collection of the products of these efforts is the OPUS web site\footnote{\url{http://opus.lingfil.uu.se}} \citep{SkadinsEA:LREC14}.
+
+We are currently engaged in a large-scale effort to crawl text from the web. This work has been funded by Google Faculty Awards and is also currently funded by the European Union via the Connecting Europe Facility.\footnote{\tt http://www.paracrawl.eu/}
+In 2016, we organized a shared task on document alignment as part of this effort \citep{buck-koehn:2016:WMT1}.
+
+Acquiring parallel corpora from the web typically goes through the stages of identifying web sites with parallel text, downloading the pages of the web site, aligning document pairs, and aligning sentence pairs.
+A final stage of the processing pipeline filters out bad sentence pairs. These exist either because the original web site did not have any actual parallel data (garbage in, garbage out), or due to failures of earlier processing steps.
+\todomlf{Or, perhaps, because documents considered parallel were only partially (e.g. 90\%) parallel?}
+
+In 2016, a shared task on sentence pair filtering\footnote{NLP4TM 2016: Shared task\\ \tt http://rgcl.wlv.ac.uk/nlp4tm2016/shared-task/} was organized, albeit in the context of cleaning translation memories which tend to be cleaner that the data at the end of a pipeline that starts with web crawls.
+
+There is a robust body of work on filtering out noise in parallel data. For example: \citet{MTS-2011-Taghipour} use an outlier detection algorithm to filter a parallel corpus; \citet{D17-1318} generate synthetic noisy data (inadequate and non-fluent translations) and use this data to train a classifier to identify  good sentence pairs from a noisy corpus; and \citet{cui-EtAl:2013:Short} use a graph-based random walk algorithm and extract phrase pair scores to weight the phrase translation probabilities to bias towards more trustworthy ones. 
+
+Most of this work was done in the context of statistical machine translation, but more recent work targets neural models. \citet{carpuat-vyas-niu:2017:NMT} focus on identifying semantic differences in translation pairs using cross-lingual textual entailment and additional length-based features, and demonstrates that removing such sentences improves neural machine translation performance.
+
+As \citet{MTS-2011-Rarrick} point out, one type of noise in parallel corpora extracted from the web are translations that have been created by machine translation. \citet{venugopal-EtAl:2011:EMNLP} propose a method to watermark the output of machine translation systems to aid this distinction, with a negligible loss of quality.  \citet{antonova-misyurev:2011:BUCC} report that rule-based machine translation output can be detected due to certain word choices, and statistical machine translation output can be detected due to lack of reordering. 
+\todomlf{I have scanned the participants' papers and have not found any that tries to detect machine translation}
+
+\citet{Belinkov:Bisk:noise} investigate the impact of noise on neural machine translation. They focus on creating systems that can {\em translate}  the kinds of orthographic errors (typos, misspellings, etc.) that humans can comprehend. In contrast, \citet{W18-2709} address noisy {\em training} data and focus on types of noise occurring in web-crawled corpora. They carried out a study how noise that occurs in crawled parallel text impacts statistical and neural machine translation. 
+
+There is a rich literature on data selection which aims at sub-sampling parallel data relevant for a task-specific machine translation system \citep{axelrod-he-gao:2011:EMNLP}. \citet{D17-1148} find that the existing data selection methods developed for statistical machine translation  are less effective for neural machine translation. This is different from our goals of handling noise since those methods tend to discard perfectly fine sentence pairs (say, about cooking recipes) that are just not relevant for the targeted domain (say, software manuals). Our task is focused on data quality that is relevant for all domains.  
+
+\section{Task}
+The shared task tackled the problem of filtering parallel corpora. Given a noisy parallel corpus (crawled from the web), participants developed methods to filter it to a smaller size of high quality sentence pairs.
+
+Specifically, we provided a very noisy 1 billion word (English token count) German--English corpus crawled from the web by the Paracrawl project (see section~\ref{ss:trainingdata} for details). We asked participants to select a subset of sentence pairs that amount to (a) 10 million words, and (b) 100 million words, counted on the English side. The resulting subsets were scored by building a statistical machine translation (Moses, phrase-based) and a neural machine translation system (Marian) trained on this data, and then measuring their BLEU score on the (a) official WMT 2018 news translation test set and (b) other undisclosed test sets.
+% Mikel: Original text below, if you don't like my edit above
+% I cannot call "BLEU" quality ;-)
+%
+%The quality of the resulting subsets was  determined by the quality of a statistical machine translation (Moses, phrase-based) and a neural machine translation system (Marian) trained on this data. The quality of the machine translation system was measured by BLEU score on the (a) official WMT 2018 news translation test set and (b) other undisclosed test sets.
+Note that the task addressed the challenge of data quality and not domain-relatedness of the data for a particular use case. Hence, we discouraged participants from subsampling the corpus for relevance to the news domain. Thus, we place more emphasis on the undisclosed test sets, although we report both scores.
+
+Participants in the shared task submitted a file with quality scores, one per line, corresponding to the sentence pairs. 
+%The scores do not have to be meaningful, except 
+Scores are only required to have the property that higher scores indicate better quality. 
+The scores were uploaded to a Google Drive folder which remains publicly accessible.\footnote{\url{ https://drive.google.com/drive/folders/1zZNPlAThm-Rnvxsy8rXzChC49bc0_TGO}}
+
+Evaluation of the quality scores was done by 
+building corpora with the best 10 million and 100 million sentence pairs according to these scores,
+%subsampling 10 million and 100 million word corpora based on these scores, 
+training statistical and neural machine translation systems with the %subsampled 
+selected corpora, and 
+%evaluation 
+computing their BLEU score on blind test sets.
+%evaluating
+%translation quality on blind test sets using the BLEU score.
+
+For development purposes, we released configuration files and scripts that mirror the official testing procedure with a development test set.
+The development pack consists of
+\begin{itemize}\itemsep -1mm \vspace{-2mm}
+\item a script to subsample corpora based on quality scores
+\item a Moses configuration file to train and test a statistical machine translation system
+\item Marian scripts to train and test a neural machine translation system
+\item the test set from the WMT 2016 Shared Task on Machine Translation of News as development set
+\item the test set from the WMT 2017 Shared Task on Machine Translation of News as development test set
+\end{itemize}
+
+The web site for the shared task\footnote{\url{http://www.statmt.org/wmt18/parallel-corpus -filtering.html}} provided detailed instructions on how to use these tools to replicate the official testing environment.
+
+\section{Data}
+\subsection{Training Data}
+\label{ss:trainingdata}
+The provided raw parallel corpus is the outcome of a processing pipeline that aimed at high recall at the cost of precision, so it is very noisy. It exhibits noise of all kinds (wrong language in source and target, sentence pairs that are not translations of each other, bad language, incomplete of bad translations, etc.).\todomlf{What is ``bad language''? How is it different from ``Wrong language''? Clarify.}
+
+A cursory inspection of the corpus is given in Table~\ref{tab:paracrawl-noise}. According to analysis by \citet{W18-2709}, only about 23\% of the data is {\em okay}, but even that fraction may be flawed in some way.
+Consider the following sentence pairs that 
+we did count as {\em okay} even though they contain mostly untranslated names and numbers. \todomlf{Explain a bit better what ``Okay'' means in \citet{W18-2709}?}
+
+\vspace{1mm}\noindent {\em %\small 
+\begin{tabular}{p{7.2cm}} \hline
+DE: Anonym 2 24.03.2010 um 20:55 314 Kommentare\\
+EN: Anonymous 2 2010-03-24 at 20:55 314 Comments\\ \hline
+DE: $<<$  erste $<$ zur\"uck Seite 3 mehr letzte $>>$\\
+EN: $<<$ first $<$ prev. page 3 next last $>>$\\\hline
+\end{tabular}}
+\vspace{2mm}
+
+\begin{table}
+\begin{center}
+\begin{tabular}{l|r}
+\bf Type of Noise & \bf Count\\ \hline
+Okay & 23\%\\ \hline
+Misaligned sentences & 41\%\\\hline
+Third language & 3\% \\
+Both English & 10\% \\
+Both German & 10\% \\\hline
+Untranslated sentences & 4\%\\ \hline
+Short segments ($\leq$2 tokens) & 1\% \\
+Short segments (3--5 tokens) & 5\% \\\hline
+Non-linguistic characters & 2\% \\\hline
+\end{tabular}
+\caption{Noise in the raw Paracrawl corpus.}
+\label{tab:paracrawl-noise}
+\end{center}
+\end{table}
+
+It is an open question if such data is also harmful, merely irrelevant, or maybe even beneficial. 
+
+The raw corpus consists of a billion words of English, paired with German on the sentence level. It was de-duplicated from a subset of the raw Paracrawl Release 1.\footnote{\url{https://paracrawl.eu/releases.html}}
+%The Paracrawl project\footnote{\tt http://www.paracrawl.eu/} is an ongoing effort to obtain large parallel corpora for many language pairs from the web. It received funding from Google via two Faculty Research Awards and from the European Union via the Connecting Europe Facility.
+
+\subsection{Provided Meta-information}
+\label{ss:meta}
+The provided corpus file contains three items per line, separated by a TAB character:
+\begin{itemize}\itemsep -1mm \vspace{-2mm}
+\item English sentence
+\item German sentence
+\item Hunalign score
+\end{itemize}
+
+The Hunalign scores were obtained from the sentence aligner \citep{hunalign}. They may be a useful feature for sentence filtering, but they do not by themselves correlate strongly with sentence pair quality. %None of the participants generally used this score.
+This score was used only by a few participants.\todomlf{At least Barbu \& Barbu, Hangya and Fraser, Papavassiliou et al, did use it as a classifier feature or for pre-filtering.}
+
+Participant's systems may take the source of the data into account, e.g., by discounting sentence pairs that come from a web domain with generally low quality scores. To this end, we released the URL sources for each sentence pair as additional data set. Note that due to de-duplication a single sentence pair may have several URL pairs associated it, since it may appear on multiple web pages.
+
+Participants were also allowed to use existing tools and external training data to build their filtering methods. Specifically, they were 
+%permitted 
+allowed 
+to use the WMT 2018 news translation task data for German--English (without the Paracrawl parallel corpus) to train components of their method.
+
+\subsection{Test Sets}
+The goal of the task is to filter down to high-quality sentence pairs, but not to sentence pairs that are most fitting to a specific domain. During the submission period of the task, we only announced that we will use the official new translation test set from the WMT 2018 Shared Task of Machine Translation of News,\footnote{\url{http://www.statmt.org/wmt18/translation-task.html}} which was not released at that time yet.
+
+In total, we used six test sets. For statistics see Table~\ref{tab:statistics}. \todomlf{Should we comment on the large differences in average sentence length? (16 words for IWSLT, 36 words for KDE) } Two of them were taken from existing evaluation campaigns, four were created for this shared task.
+\begin{description}
+    \item[\sc newstest2018] The test set from the WMT 2018 Shared Task of Machine Translation of News. It contains news stories that were either translated from German to English or from English to German.
+    \item[\sc iwslt2017] The test set from the IWSLT 2017 evaluation campaign. It consists of transcripts of talks given at the TED conference. They cover generally accessible topics in the area of technology, entertainment, and design.
+    \item[\sc acquis] This test set was extracted from the Acquis Communtaire corpus, which is available on OPUS\footnote{\url{http://opus.nlpl.eu/}} \citep{TIEDEMANN12.463} (which was the source to create the subsequent 3 test sets). The test set consists of laws of the European Union that have to be incorporated into the national laws of the EU member countries. We only used sentences with 15 to 80 words, and removed any duplicate sentence pairs.
+    \item[\sc emea] This test set was extracted from documents European Medicines Agency, which consist of public health announcements and descriptions of medications. We only used sentences with 20 to 80 words, and removed any duplicate sentence pairs.
+    \item[\sc globalvoices] This test set was extracted from news stories posted and translated on Global Voices, an international and multilingual community of bloggers, journalists, translators, academics, and human rights activists. We selected several complete stories from this corpus.
+    \item[\sc kde] This test set was extracted from KDE4 localization files, which is open source software for Linux. We only used sentences with 15 to 80 words, and removed any duplicate sentence pairs.
+\end{description}
+
+\begin{table}
+    \centering
+    \begin{tabular}{|l|r|r|} \hline
+    \bf Test set & Sentences & English Words \\ \hline
+    \sc newstest2018  & 2998 & 58,628 \\
+    \sc iwslt2017     & 1138 & 18,162 \\
+    \sc acquis        & 2862 & 98,624 \\
+    \sc emea          & 3000 & 93,071 \\
+    \sc globalvoices  & 3000 & 54,930 \\
+    \sc kde           & 3000 & 109,716 \\ \hline
+    \end{tabular}
+    \caption{Statistics for the test sets used to evaluate the machine translation systems trained on the subsampled data sets. Word counts are obtained with {\tt wc} on untokenized text.}
+    \label{tab:statistics}
+\end{table}
+
+For all the test sets, we checked for overlap with the training data, to prevent the possibility of having the test set being contained in the released noisy parallel data. We originally considered a test set based on the PHP documentation but removed it because that was contained in Paracrawl.
+
+The official scoring of machine translation systems generated from the subsampled data sources is the average of the individual BLEU scores for each test set.
+
+\section{Evaluation Protocol}
+The testing setup mirrors the development environment that we provided to the participants.
+
+\subsection{Participants}
+We received submissions from 17 different organizations. See
+Table~\ref{tab:participants} for the complete list of participants. The participant's organizations are quite diverse, with 3 participants from Spain, 3 participants from the United States, 2 participants from Germany, 1 participant each from Canada, Greece, China, Japan, France, Latvia, Estonia, United Kingdom, and Brazil. Nine of the participants are companies, 3 are national research organizations, and 5 were universities.
+
+\begin{table*}
+\begin{tabular}{|l|l|} \hline
+\bf Acronym & \bf Participant and System Description Citation \\ \hline
+AFRL     &  Air Force Research Lab, USA \citep{erdmann-gwinnup:2018:WMT} \\
+Alibaba  &  Machine Intelligence Technology Lab, Alibaba Group, China \citep{lu-EtAl:2018:WMT1} \\
+ARC & Inst. for Language and Speech Proc./Athena RC, Greece \citep{papavassiliou-EtAl:2018:WMT} \\
+U Tartu & University of Tartu, Estonia \citep{barbu-barbumititelu:2018:WMT} \\
+JHU & Johns Hopkins University, USA \citep{khayrallah-xu-koehn:2018:WMT} \\
+LMU & Ludwig Maximilian University of Munich, Germany \citep{hangya-fraser:2018:WMT} \\ 
+MAJE & WebInterpret, Spain \citep{fomicheva-gonzlezrubio:2018:WMT} \\
+Microsoft & Microsoft Corp., USA \citep{junczysdowmunt:2018:WMT1} \\
+NICT & National Inst. of Information and Communications Tech., Japan \citep{wang-EtAl:2018:WMT1} \\
+NRC & National Research Council, Canada \citep{littell-EtAl:2018:WMT,lo-EtAl:2018:WMT} \\
+Prompsit & Prompsit, Spain \citep{snchezcartagena-EtAl:2018:WMT} \\
+RWTH & Rheinland-Westph\"alische Technical University, Germany \citep{rossenbach-EtAl:2018:WMT} \\
+Speechmatics & Speechmatics, United Kingdom \citep{ash-francis-williams:2018:WMT} \\
+Systran & Systran, France \citep{pham-crego-senellart:2018:WMT} \\
+Tilde & Tilde, Latvia \citep{pinnis:2018:WMT} \\ 
+UTFPR & Federal University of Technology, Paran\`a, Brazil \citep{paetzold:2018:WMT} \\
+Vicomtech & Vicomtech, Spain \citep{azpeitia-etchegoyhen-martnezgarcia:2018:WMT} \\ \hline
+\end{tabular} 
+\caption{Participants in the shared task.}
+\label{tab:participants}
+\end{table*}
+
+Each participant submitted up to 5 different sets of scores, resulting in a total of 44 different submissions that we scored.
+
+\subsection{Subset Selection}
+We provided to the participants a file containing one sentence pair per line (see section~\ref{ss:meta}). A submission to the shared task consists of a file with the same number of lines, with one score per line corresponding to the quality of the corresponding sentence pair.
+
+Using the score file, we selected subsets of a predefined size, defined by the number of English words. We chose the number of English words instead of German words, since the latter would allow selection of sentence pairs with very few German words and many English words which are beneficial for language model training but do not count much towards the German word total.
+
+Selecting a subset of sentence pairs is done by finding a threshold score, so that the sentence pairs that will be included in the subset have a quality score at and above this threshold.
+In some cases, a submission assigned this threshold score to a large number of sentence pairs. Including all of them would yield too large a subset, excluding them yields too small a subset. Hence, we randomly included some of the sentence pairs to get the desired size in this case.
+
+\subsection{System Training}
+Given a selected subset of given size for a system submission, we built statistical (SMT) and neural machine translation (NMT) systems to evaluate the quality of the selected sentence pairs.
+
+\paragraph{\bf SMT} For statistical machine translation, we used Moses \citep{koehn-EtAl:2007:PosterDemo} with fairly basic settings, such as Good-Turing smoothing of phrase table probabilities, maximum phrase length of 5, maximum sentence length of 80, lexicalized reordering ({\em hier-mslr-bidirectional-fe}), fast-align for word alignment with {\em grow-diag-final-and} symmetrization, tuning with batch-MIRA, no operation sequence model, 5-gram language model trained on the English side of the subset with no additional data, and decoder beam size of 5,000.
+
+\paragraph{\bf NMT} For neural machine translation, we used Marian \citep{P18-4020}. It uses the default settings of version 1.5, with 50,000 BPE operations, maximum sentence length of 100, layer normalization, dropout of 0.2 for RNN states, 0.1 for source embeddings and 0.1 for target embeddings, exponential smoothing, and decoding with beam size 12 and length normalization (1). 
+Training a system for the 10 million word subset was limited to 20 epochs and took about 10 hours. Training a system for the 100 million word subset was limited to 10 epochs and took about 2 days.
+
+Scores on the test sets were computed with {\tt multi-bleu-detok.perl} included in Moses. We report case-insensitive scores.
+
+\section{Results}
+
+\subsection{Core Results}
+\input{results.tex}
+The official results are reported in Table~\ref{tab:results}. The table contains the average BLEU score over all the 6 test sets for the 4 different setups:
+\begin{itemize}\vspace{-2pt}\itemsep 0pt
+\item statistical machine translation trained on the selected 10-million-word corpus subset; 
+\item statistical machine translation trained on the selected 100-million-word corpus subset; 
+\item neural machine translation trained on the selected 10-million-word corpus subset;
+\item neural machine translation trained on the selected 100-million-word corpus subset. 
+\end{itemize}
+
+In the table, we highlight cells for the best scores for each of these settings, as well as scores that are close to it. 
+
+One striking observation is that the scores differ much more for the 10 million word subset than for the 100 million word subset. \todomlf{Maybe this means that segment pairs obtaining the top ranks contain a lot of outlyingly high scores for bad sentences, and this is averaged out by adding more sentence pairs.} Scores also differ more for neural machine translation systems than for statistical machine translation systems.
+
+For the 10 million word subset, there are only 2 submissions within 0.5 BLEU points of the best system for statistical machine translation, and 0 for neural machine translation. For the 100 million word subset, there are 15 submissions within 0.5 BLEU points of the best system for statistical machine translation, and 9 submissions within 0.5 BLEU points for neural machine translation. Note that many of these submissions come from the same participants.
+
+For both data sets, scores for neural machine translation are significantly higher. For the 10 million word subsets, the best NMT score is 28.6, while the best SMT score is 24.6. For the 100 million word subsets, the best NMT score is 32.1, while the best SMT score is 26.5. To be fair, unlike it is done here, statistical machine translation is typically trained with larger monolingual corpora for target language modelling, which are essential for good performance.
+
+\subsection{Results by Test Set}
+\input{results-by-test-set.tex}
+Table~\ref{tab:results-by-test-set-smt} and \ref{tab:results-by-test-set-nmt} break out the results by each of the test sets, for statistical machine translation and neural machine translation, respectively.
+
+The use of multiple test sets was motivated by the objective to discourage participants to filter sentence pairs for a specific domain, instead of filtering for general quality. Some participants used domain-specific data for training some elements of their filtering systems, such as monolingual news data sets to train language models but argued that these are broad domains that do not lead to domain over-fitting.
+
+The results do not evoke the impression that some systems are doing better on some domains than others, at least not more than random variance would lead to expect. 
+%
+The closest test sets to the development sets are {\sc newstest2018}, {\sc globalvoices}, and maybe {\sc iwslt2018}. Only the 10 million word submissions {\em rwth-nn} and {\em rwth-nn-redundant} seem to do much better on these sets than others, relative to other submissions.
+
+\subsection{Additional Subset Sizes}
+Since we were interested in the shape of the curve of how different corpus sizes impact machine translation performance, we selected additional subset sizes. Specifically, in addition to the 10- and 100-million-word corpora, we also selected subset 20, 30, 50, 80, 150, and 200 million words.
+
+See Figure~\ref{fig:curve-nmt} for results for neural machine translation systems (also broken down by each individual test set) and Figure~\ref{fig:curve-smt} for statistical machine translation systems. We only computed results for six systems due to the computational cost involved.\todomlf{I see SEVEN results in the graphs}
+
+
+
+\begin{figure*}
+\begin{center}
+\input{curve-nmt.tex}
+
+\vspace{-0mm}
+\input{curve-nmt-newstest2018.tex}
+\input{curve-nmt-acquis.tex}
+
+\vspace{-2mm}
+\input{curve-nmt-emea.tex}
+\input{curve-nmt-globalvoices.tex}
+
+\vspace{-2mm}
+\input{curve-nmt-iwslt2017.tex}
+\input{curve-nmt-kde.tex}
+\end{center}
+\vspace{-2mm}
+\caption{Additional corpus sizes, with breakdown by individual test set for some high-performing submissions. The charts plot BLEU scores against the size of the subselected corpus (in millions of words). The curves peak around 100 million words.}
+\label{fig:curve-nmt}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\input{curve-smt.tex}
+\end{center}
+\vspace{-5mm}
+\caption{Version of Figure~\ref{fig:curve-nmt} for statistical machine translation systems built from the subselected data. Note that the curves are flatter, and the several systems score in a narrow band of 1 BLEU point across a wide range of corpus sizes (30-200 million words), indicated in grey.}
+\label{fig:curve-smt}
+\end{figure*}
+
+The scoring on additional subset sizes was not announced before the submission deadline for the shared task, so none of the participants optimized for these. In fact, some participants assigned the same low value for almost all sentence pairs that would be ignored when selecting the 100-million-word corpus subset. So, when selecting larger corpus subsets (150 and 200 million words, as we have done), the resulting system scores collapse.
+
+The curves for neural machine translation system scores peak almost always at 100 million words, although also occasionally at 80 or 150 million words. Since we did not plot these curves when setting up the shared task, we cannot say if 100 million words is just a optimal value for this corpus or if participants overfitted their system to this value, although we would guess the first.
+
+%The performance between the submissions are quite similar on the different test sets. 
+The performance of the selected submissions as a function of subset size behaves quite similarly across test sets.\todomlf{Check my rewording}
+None of the submissions shown in the figures has overly optimized on the news test set.
+
+\section{Methods used by Participants}
+Not surprising due to the large number of submissions, many different approaches were explored for this task. However, most participants used a system using three components: (1) pre-filtering rules, (2) scoring functions for sentence pairs, and (3) a classifier that learned weights for feature functions.
+
+\paragraph{Pre-filtering rules.} Some of the training data can be discarded based on simple deterministic filtering rules. These may include rules to remove
+\begin{itemize}\vspace{-2pt}\itemsep 1pt
+\item too short or too long sentences
+\item sentences that have too few words (tokens with letters instead of just special characters), either absolute or relative to the total number of tokens
+\item sentences whose average token length is too short or too long 
+\item sentence pairs with mismatched lengths in terms of number of tokens
+\item sentence pairs where names, numbers, email addresses, URLs do not match between both sides\todomlf{Dates?}
+\item sentence pairs that are too similar, indicating simple copying instead of translating
+\item sentences where language identifier do not detect the required language
+\end{itemize}
+
+\paragraph{Scoring functions.} Sentence pairs that pass the pre-filtering stage are assessed with scoring functions which provide scores that hopefully correlate with quality of sentence pairs. Participants used a variety of such scoring functions, including
+\begin{itemize}\vspace{-2pt}\itemsep 1pt
+\item $n$-gram or neural language models on clean data
+\item language models trained on the provided raw data as contrast
+\item neural translation models
+\item bag-of-words lexical translation probabilities
+\end{itemize}
+Note that the raw scores provided by these models may be also refined in several ways. For instance, one may desire that the language model perplexities of a German sentence and its paired English sentence are similar. Or, one may contrast the translation model score for a sentence and its given paired sentence with the translation model score for the sentence and its best translation according to the model.
+
+\paragraph{Learning weights for scoring functions.} Given a large number of scoring functions, simply averaging their resulting scores may be inadequate. Learning weights to optimize machine translation system quality is computationally intractable due to the high cost of training these systems to evaluate different weight settings. A few participants used instead a classifier that learns how to distinguish between good and bad sentence pairs. Good sentence pairs are selected from existing high-quality parallel corpora, while bad sentence pairs are either synthesized by scrambling good sentence pairs or by using the raw crawled data.
+
+Some participants made a distinction between unsupervised methods that did not use existing parallel corpora to train parts of the system, and supervise methods that did. Unsupervised methods have the advantage that they can be readily deployed for language pairs for which no seed parallel corpora exist.
+
+\todomlf{Shouldn't we repair the casing in references? It would have to be done upstream at \url{http://www.statmt.org/survey/bibtex/mt.bib}}
+
+\section*{Acknowledgements}
+The shared task was supported by a Google Faculty Research Award to Johns Hopkins University and by the European Union through the Connected Europe Facility project {\em Provision of Web-Scale Parallel Corpora for Official European Languages} (Paracrawl, 2016-EU-IA-0114).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliographystyle{apalike} 
+\bibliography{mt,more,WMT2018}
+
+\end{document}
